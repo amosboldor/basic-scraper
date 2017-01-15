@@ -12,7 +12,9 @@ setup(
     license="MIT",
     package_dir={'': '.'},
     py_modules=[
-        "beautifulsoup4"
+        "beautifulsoup4",
+        "html5lib",
+        "requests"
     ],
     extras_require={
         "test": ["pytest", "pytest-cov", "tox"]
