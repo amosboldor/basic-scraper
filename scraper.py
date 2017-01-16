@@ -5,6 +5,9 @@ import requests
 import sys
 import re
 from pprint import pprint
+import geocoder
+import json
+import argparse
 
 INSPECTION_DOMAIN = 'http://info.kingcounty.gov'
 INSPECTION_PATH = '/health/ehs/foodsafety/inspections/Results.aspx'
@@ -130,21 +133,56 @@ def extract_score_data(element):
     return data
 
 
-if __name__ == '__main__':
+def generate_results(test=False, count=10):
+    """Generate results and yeilds them."""
     kwargs = {
         'Zip_Code': '98118',
         'Inspection_Start': '3/5/2013',
         'Inspection_End': '8/7/2015'
     }
-    if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    if test:
         html, encoding = load_inspection_page('inspection_page.html')
     else:
         html, encoding = get_inspection_page(**kwargs)
-    parsed_html = parse_source(html, encoding)
-    listings = extract_data_listings(parsed_html)
-    for listing in listings:
-        data = extract_restaurant_metadata(listing)
-        data.update(extract_score_data(listing))
-        pprint(data)
-        print()
-    print('Number of listings: ', len(listings))
+    doc = parse_source(html, encoding)
+    listings = extract_data_listings(doc)
+    for listing in listings[:count]:
+        metadata = extract_restaurant_metadata(listing)
+        score_data = extract_score_data(listing)
+        metadata.update(score_data)
+        yield metadata
+
+
+def get_geojson(result):
+    """Return the geojson from the listing put in."""
+    address = " ".join(result.get('Address', ''))
+    if not address:
+        return None
+    geojson = geocoder.google(address).geojson
+    data = {}
+    keys = ('Business Name',
+            'Average Score',
+            'Total Inspections',
+            'High Score',
+            'Address')
+    for key, val in result.items():
+        if key not in keys:
+            continue
+        if isinstance(val, list):
+            val = " ".join(val)
+        data[key] = val
+    geojson_address = geojson['properties'].get('address')
+    if geojson_address:
+        data['Address'] = geojson_address
+    geojson['properties'] = data
+    return geojson
+
+if __name__ == '__main__':
+    test = len(sys.argv) > 1 and sys.argv[1] == 'test'
+    total_result = {'type': 'FeatureCollection', 'features': []}
+    for result in generate_results(test):
+        geo_result = get_geojson(result)
+        total_result['features'].append(geo_result)
+        pprint(total_result)
+    with open('my_map.json', 'w') as fh:
+        json.dump(total_result, fh)

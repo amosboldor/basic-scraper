@@ -14,6 +14,7 @@ setup(
     py_modules=[
         "beautifulsoup4",
         "html5lib",
-        "requests"
+        "requests",
+        "geocoder"
     ]
 )
