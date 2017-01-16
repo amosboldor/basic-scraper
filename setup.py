@@ -15,8 +15,5 @@ setup(
         "beautifulsoup4",
         "html5lib",
         "requests"
-    ],
-    extras_require={
-        "test": ["pytest", "pytest-cov", "tox"]
-    }
+    ]
 )
