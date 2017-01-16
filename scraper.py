@@ -182,7 +182,7 @@ if __name__ == '__main__':
     total_result = {'type': 'FeatureCollection', 'features': []}
     for result in generate_results(test):
         geo_result = get_geojson(result)
-        pprint(geo_result)
         total_result['features'].append(geo_result)
+        pprint(total_result)
     with open('my_map.json', 'w') as fh:
         json.dump(total_result, fh)
